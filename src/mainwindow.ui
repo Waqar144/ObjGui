@@ -63,6 +63,7 @@
       </property>
       <property name="font">
        <font>
+        <family>Noto Sans</family>
         <pointsize>11</pointsize>
        </font>
       </property>
@@ -97,7 +98,9 @@ font-size: 11pt;</string>
        <item>
         <widget class="QLabel" name="fileFormatlabel">
          <property name="font">
-          <font/>
+          <font>
+           <pointsize>11</pointsize>
+          </font>
          </property>
          <property name="layoutDirection">
           <enum>Qt::LeftToRight</enum>
@@ -193,6 +196,7 @@ font-size: 11pt;</string>
              </property>
              <property name="font">
               <font>
+               <family>Sans Serif</family>
                <pointsize>11</pointsize>
                <weight>50</weight>
                <italic>false</italic>
@@ -216,6 +220,9 @@ font-size: 11pt;</string>
               <set>Qt::AlignCenter</set>
              </property>
             </widget>
+           </item>
+           <item>
+            <widget class="QLineEdit" name="searchFunction"/>
            </item>
            <item>
             <widget class="QListWidget" name="functionList">
@@ -692,6 +699,8 @@ font-size: 11pt;</string>
                 <widget class="QLabel" name="label_2">
                  <property name="font">
                   <font>
+                   <family>Noto Sans</family>
+                   <pointsize>12</pointsize>
                    <weight>75</weight>
                    <bold>true</bold>
                   </font>
@@ -776,6 +785,8 @@ font-size: 11pt;</string>
                 <widget class="QLabel" name="label">
                  <property name="font">
                   <font>
+                   <family>Noto Sans</family>
+                   <pointsize>12</pointsize>
                    <weight>75</weight>
                    <bold>true</bold>
                   </font>
@@ -1299,7 +1310,7 @@ color: rgb(85, 85, 85);</string>
      <x>0</x>
      <y>0</y>
      <width>1232</width>
-     <height>25</height>
+     <height>23</height>
     </rect>
    </property>
    <property name="font">

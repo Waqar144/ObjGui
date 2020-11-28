@@ -28,9 +28,9 @@ void DisassemblyCore::disassemble(QString file){
     QFuture< QVector<Section> > futureSectionData = QtConcurrent::run(&objDumper, &ObjDumper::getSectionData, file);
     QFuture<QVector< QVector<QString> > > futureStrings = QtConcurrent::run(&stringsDumper, &StringsDumper::dumpStrings, file, baseOffsets);
 
-    functionData = futureFunctionData.result();
     sectionData = futureSectionData.result();
     strings.setStringsData(futureStrings.result());
+    functionData = futureFunctionData.result();
 
     xrefStrings();
 
@@ -49,18 +49,18 @@ void DisassemblyCore::xrefStrings(){
         int functionLen = itr->getMatrixLen();
 
         for (int lineNum = 0; lineNum < functionLen; lineNum++){
-            QString optStr = itr->getLine(lineNum)[3];
+            const auto& optStr = itr->getLine(lineNum).at(3);
 
             QString address = extractAddress(optStr);
 
-            if (address != ""){
+            if (!address.isEmpty()){
                 int strIndex = strings.getIndexByAddress(address);
 
                 if (strIndex > 0){
                     QString str = strings.getStringAt(strIndex);
 //                    qDebug() << str;
 
-                    if(str != ""){
+                    if(!str.isEmpty()){
                         itr->setXrefData(lineNum, str);
                     }
                 }
@@ -69,17 +69,62 @@ void DisassemblyCore::xrefStrings(){
     }
 }
 
-QString DisassemblyCore::extractAddress(QString s){
-    QRegularExpression addressRegex;
-    addressRegex.setPattern("(0x)?[0-9a-f]{4,}");
-    QRegularExpressionMatch regexMatch;
+int gi =0;
+QString DisassemblyCore::extractAddress(const QByteArray& s) {
+//    s="*0x5bf402(%rip)        # 63cbf8 <QPushButton::qt_metacall(QMetaObject::Call, int, void**)@Qt_5>";
+//    s="*0x5bca62(%rip)        # 63f598 <new_aspell_config>";
+    for (int i = 0; i < s.length(); ++i) {
+        //keep moving forward till we find a digit
+        while (i < s.length() && ! isdigit(s.at(i)))
+            i++;
 
-    if (s.contains(addressRegex, &regexMatch)){
-        QString address = regexMatch.captured();
-        return address;
+        if (i >= s.length())
+            return QLatin1String("");
+
+        int start = i;
+        if (s.at(i) == '0')
+            if (i + 1 < s.length() && s.at(i + 1) == 'x') {
+                i += 2;
+            }
+
+        const char c = s.at(i);
+        if (!isdigit(c) && !(c >= 97 && c <= 102))
+            return QLatin1String("");
+
+        int count = 0;
+        while (s.at(i) || (s.at(i) >= 97 && s.at(i) <= 102)) {
+               count++;
+               i++;
+               if (i >= s.length())
+                   break;
+        }
+
+        if (count >= 4) {
+            QString ret = s.mid(start, i - start);
+//            qWarning() << s;
+//            qWarning() << "Ret: " << ret;
+//            gi++;
+//            qWarning() << gi << " -------------------";
+            return ret;
+        }
+//        return QLatin1String("");
     }
+    return QLatin1String("");
 
-    return "";
+//    QRegularExpression addressRegex;
+//    addressRegex.setPattern("(0x)?[0-9a-f]{4,}");
+//    QRegularExpressionMatch regexMatch;
+
+//    if (s.contains(addressRegex, &regexMatch)){
+//        qWarning() << "S: " << s;
+//        QString address = regexMatch.captured();
+//        qWarning() << "address: " << address;
+//        i++;
+//        qWarning() << i << "----------------------";
+//        return address;
+//    }
+
+//    return "";
 }
 
 QString DisassemblyCore::getObjdumpErrorMsg(QString file){
@@ -324,10 +369,11 @@ QVector< QVector<QString> > DisassemblyCore::findReferences(QString target){
 QString DisassemblyCore::getSectionHexDump(){
     int len = sectionData.length();
     QString hexStr;
+    hexStr.reserve(len * 3);
 
     for (int i = 1; i < len; i++){
-        Section section = sectionData.at(i);
-        hexStr.append(section.getSectionName() + "\n" + section.getHexString() + "\n");
+        const Section& section = sectionData.at(i);
+        hexStr.append(section.getSectionName() + QLatin1Char('\n') + section.getHexString() + QLatin1Char('\n'));
     }
 
     return hexStr;
@@ -336,10 +382,11 @@ QString DisassemblyCore::getSectionHexDump(){
 QString DisassemblyCore::getSectionAddressDump(){
     int len = sectionData.length();
     QString addressStr;
+    addressStr.reserve(len * 3);
 
     for (int i = 1; i < len; i++){
-        Section section = sectionData.at(i);
-        addressStr.append("\n" + section.getAddressString() + "\n");
+        const Section& section = sectionData.at(i);
+        addressStr.append(QLatin1Char('\n') + section.getAddressString() + QLatin1Char('\n'));
     }
 
     return addressStr;

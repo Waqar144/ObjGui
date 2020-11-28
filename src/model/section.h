@@ -9,12 +9,12 @@ class Section
 public:
     Section();
     Section(QString section, QVector< QVector<QByteArray> > contents);
-    QString getSectionName();
-    QString getAddressAt(int index);
-    int getMatrixLen();
-    QVector<QByteArray> getLine(int line);
-    QByteArray getHexString();
-    QByteArray getAddressString();
+    const QString& getSectionName() const;
+    QByteArray getAddressAt(int index) const;
+    int getMatrixLen() const;
+    QVector<QByteArray> getLine(int line) const;
+    QByteArray getHexString() const;
+    QByteArray getAddressString() const;
 
 private:
     QString sectionName;

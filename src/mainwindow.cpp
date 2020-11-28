@@ -177,20 +177,19 @@ void MainWindow::loadBinary(QString file){
         clearUi();
 
         if (canDisassemble(file)) {
-            QProgressDialog progress("Loading Disassembly", "", 0, 4, this);
+            QProgressDialog progress("Loading Disassembly", "", 0, 5, this);
             progress.setCancelButton(0);
             progress.setWindowModality(Qt::WindowModal);
-            progress.setMinimumDuration(500);
+            progress.show();
             progress.setValue(0);
 
             // Disassemble in seperate thread
-            QFuture<void> disassemblyThread = QtConcurrent::run(&disassemblyCore, &DisassemblyCore::disassemble, file);
+            QElapsedTimer t; t.start();
+            disassemblyCore.disassemble(file);
 
-            while (!disassemblyThread.isFinished()){
-                qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
-            }
+            qWarning() << "Time: " << t.elapsed();
 
-            progress.setValue(1);
+            progress.setValue(2);
 
             if (!disassemblyCore.disassemblyIsLoaded()){
                 ui->codeBrowser->setPlainText("File format not recognized.");
@@ -206,11 +205,11 @@ void MainWindow::loadBinary(QString file){
                 enableMenuItems();
             }
 
-            progress.setValue(2);
+            progress.setValue(3);
 
             displayHexData();
 
-            progress.setValue(3);
+            progress.setValue(4);
 
             setUpdatesEnabled(false);
 
@@ -227,7 +226,7 @@ void MainWindow::loadBinary(QString file){
             ui->stringsAddressBrowser->setPlainText(disassemblyCore.getStringsAddresses());
             ui->stringsBrowser->setPlainText(disassemblyCore.getStrings());
 
-            progress.setValue(4);
+            progress.setValue(6);
         }
     }
 }
@@ -1212,3 +1211,19 @@ void MainWindow::on_actionFullscreen_triggered()
         }
 }
 
+
+void MainWindow::on_searchFunction_returnPressed()
+{
+    QString search = ui->searchFunction->text();
+    ui->functionList->clear();
+    QStringList functions = disassemblyCore.getFunctionNames();
+    functions = functions.filter(search, Qt::CaseInsensitive);
+    ui->functionList->addItems(functions);
+}
+
+void MainWindow::on_searchFunction_textChanged(const QString &arg1)
+{
+    if (arg1.isEmpty()) {
+        ui->functionList->addItems(disassemblyCore.getFunctionNames());
+    }
+}

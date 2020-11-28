@@ -60,10 +60,10 @@ QString Strings::getAddressAt(int index){
 
 QString Strings::getStringAt(int index){
     if(index >= 0 && index < matrixLen){
-        QString str = stringsMatrix[index][1].replace('\n', "\\n");
+        QString str = stringsMatrix[index][1].replace(QChar('\n'), QStringLiteral("\\n"));
         return str;
     } else {
-        return "";
+        return QLatin1String("");
     }
 }
 

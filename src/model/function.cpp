@@ -31,7 +31,7 @@ void Function::setXrefData(int index, QString xrefData){
 }
 
 // Return the line(row) from the matrix at given index/line number
-QVector<QByteArray> Function::getLine(int line){
+QVector<QByteArray> Function::getLine(int line) const {
     if (line >= 0 && line < matrixLen)
         return functionMatrix.at(line);
     else {
@@ -70,7 +70,7 @@ bool Function::isEmpty(){
         return false;
 }
 
-int Function::getMatrixLen(){
+int Function::getMatrixLen() const {
     return matrixLen;
 }
 

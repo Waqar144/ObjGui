@@ -48,15 +48,15 @@ QString ObjDumper::getDump(QStringList argsList){
 // Parses disassembly and populates function list
 QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> baseOffsets){
    QVector<Function> functionList;
-   QString dump = getDisassembly(file);
+   const QString dump = getDisassembly(file);
 
     // Split dump into vector of string references to each function
-    QVector<QStringRef> dumpList = dump.splitRef("\n\n");
+    const QVector<QStringRef> dumpList = dump.splitRef("\n\n");
     QString currentSection = "";
 
     // Parse dumplist
     for (int listIndex = 0; listIndex < dumpList.length(); listIndex++){
-        QStringRef dumpStr = dumpList.at(listIndex);
+        const QStringRef& dumpStr = dumpList.at(listIndex);
 
         // Parse first word
         QString tmp;
@@ -67,21 +67,21 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
         }
 
         // Check if section or function
-        if (tmp == "Disassembly"){
+        if (tmp == QStringLiteral("Disassembly")){
             currentSection = dumpStr.mid(23).toString();
             currentSection.chop(1);
 
-        } else if (tmp.startsWith("0") /*tmp is address*/){
-            QString name = "";
-            QString address = "";
-            QString fileOffest = "";
+        } else if (tmp.startsWith('0') /*tmp is address*/){
+            QString name = QString();
+            QString address = QString();
+            QString fileOffest = QString();
             QVector< QVector<QByteArray> > functionMatrix;
 
             // Get function address
             address = tmp;
 
             // Get file offset
-            fileOffest = getFileOffset(address, baseOffsets)[0];
+            fileOffest = getFileOffset(address, baseOffsets).at(0);
 
             // Get function name
             i += 2;
@@ -92,14 +92,14 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
             name.chop(2);
 
             // Parse function contents
-            QStringRef contents = dumpStr.mid(i);
-            QVector<QStringRef> lines = contents.split("\n");
+            const QStringRef contents = dumpStr.mid(i);
+            const QVector<QStringRef> lines = contents.split("\n");
 
             for (int lineNum = 0; lineNum < lines.length()-1; lineNum++){
-                QStringRef line = lines.at(lineNum);
-                QVector<QByteArray> row = parseFunctionLine(line);
+                const QStringRef& line = lines.at(lineNum);
+                const QVector<QByteArray> row = parseFunctionLine(line);
 
-                if (row[0] != ""){
+                if (!row[0].isEmpty()){
                     functionMatrix.append(row);
                 }
 
@@ -116,13 +116,14 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
 
 }
 
-QVector<QByteArray> ObjDumper::parseFunctionLine(QStringRef line){
+QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
     QVector<QByteArray> row(5);
     if (line.length() > insnwidth * 3) {
         int pos = 0;
 
         // Get address
-        QByteArray address;
+        QString address;
+        address.reserve(line.size());
 
         while (pos < line.length() && line.at(pos) != QChar(':')){
             address.append(line.at(pos));
@@ -149,14 +150,16 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(QStringRef line){
         }
 
         // Get optcode
-        QByteArray opt;
+        QString opt;
+        opt.reserve(line.length() - pos);
         while (pos < line.length() && line.at(pos) != QChar(' ')){
             opt.append(line.at(pos));
+//            opt.append(line.at(pos));
             pos++;
         }
         pos++;
 
-        row[2] = opt;
+        row[2] = opt.toLocal8Bit();
 
         while (pos < line.length() && line.at(pos) == QChar(' ')){
             pos++;
@@ -166,14 +169,14 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(QStringRef line){
         row[3] = line.mid(pos).toLocal8Bit();
 
         // empty by default, used for xref data
-        row[4] = "";
+        row[4] = QByteArrayLiteral("");
 
         // Remove extra space from byte array
-        row[0].squeeze();
-        row[1].squeeze();
-        row[2].squeeze();
-        row[3].squeeze();
-        row[4].squeeze();
+//        row[0].squeeze();
+//        row[1].squeeze();
+//        row[2].squeeze();
+//        row[3].squeeze();
+//        row[4].squeeze();
     } else {
         row[0] = "";
         row[1] = "";
@@ -185,16 +188,16 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(QStringRef line){
     return row;
 }
 
-QByteArray ObjDumper::parseAddress(QByteArray address){
+QByteArray ObjDumper::parseAddress(QString address){
     address = address.trimmed();
     QRegularExpressionMatch addressMatch = addressRegex.match(address);
 
     if (addressMatch.hasMatch() && addressMatch.capturedLength(0) == address.length()){
-        address = "0x" + address;
+        address = QStringLiteral("0x") + address;
 
-        return address;
+        return address.toLocal8Bit();
     } else {
-        return "";
+        return QByteArrayLiteral("");
     }
 }
 
@@ -204,14 +207,14 @@ QByteArray ObjDumper::parseHexBytes(QByteArray byteString){
     if (hexMatch.hasMatch() && hexMatch.capturedLength(0) == byteString.length()) {
         byteString.replace(" ", "");
         int paddingLength = (insnwidth * 2) - byteString.length();
-        QString padding = "";
+        QByteArray padding;
         padding.fill(' ', paddingLength);
         byteString.append(padding);
 
         return byteString;
 
     } else {
-        return "";
+        return QByteArrayLiteral("");
     }
 }
 

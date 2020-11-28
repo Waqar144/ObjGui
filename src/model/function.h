@@ -9,7 +9,7 @@ class Function
 public:
     Function();
     Function(QString functionName, QString addr, QString section, QString offset, QVector< QVector<QByteArray> > contents);
-    int getMatrixLen();
+    int getMatrixLen() const;
     bool isEmpty();
     void setXrefData(int index, QString xrefData);
     QString getName();
@@ -17,7 +17,7 @@ public:
     QString getSection();
     QString getFileOffset();
     QString getAddressAt(int index);
-    QVector<QByteArray> getLine(int line);
+    QVector<QByteArray> getLine(int line) const;
     QByteArray getContents();
 private:
     QString name;

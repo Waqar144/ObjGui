@@ -34,10 +34,10 @@ private:
     QString getContents(QString file);
     QString removeHeading(QString dump, int numLines);
     QString getHeading(QString dump, int numLines);
-    QByteArray parseAddress(QByteArray address);
+    QByteArray parseAddress(QString address);
     QByteArray parseHexBytes(QByteArray byteString);
     QString parseDumpForErrors(QString dump);
-    QVector<QByteArray> parseFunctionLine(QStringRef line);
+    QVector<QByteArray> parseFunctionLine(const QStringRef& line);
     QVector<QByteArray> parseSectionLine(QStringRef line);
 
     bool useCustomBinary;
