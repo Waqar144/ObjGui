@@ -9,6 +9,7 @@
 
 #include "objdumper.h"
 #include "stringsdumper.h"
+#include <QFutureWatcher>
 
 class DisassemblyCore
 {

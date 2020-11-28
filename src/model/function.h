@@ -10,15 +10,15 @@ public:
     Function();
     Function(QString functionName, QString addr, QString section, QString offset, QVector< QVector<QByteArray> > contents);
     int getMatrixLen() const;
-    bool isEmpty();
+    bool isEmpty() const;
     void setXrefData(int index, QString xrefData);
-    QString getName();
-    QString getAddress();
-    QString getSection();
-    QString getFileOffset();
-    QString getAddressAt(int index);
+    const QString& getName() const;
+    const QString& getAddress() const;
+    const QString& getSection() const;
+    const QString& getFileOffset() const;
+    const QString& getAddressAt(int index) const;
     QVector<QByteArray> getLine(int line) const;
-    QByteArray getContents();
+    QByteArray getContents() const;
 private:
     QString name;
     QString address;

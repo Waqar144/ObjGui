@@ -27,7 +27,7 @@ Function::Function(QString functionName, QString addr, QString sect, QString off
 }
 
 void Function::setXrefData(int index, QString xrefData){
-    functionMatrix[index][4] = "\"" + xrefData.toLatin1() + "\"";
+    functionMatrix[index][4] = (QChar('"') + xrefData + QChar('"')).toLocal8Bit();
 }
 
 // Return the line(row) from the matrix at given index/line number
@@ -41,7 +41,7 @@ QVector<QByteArray> Function::getLine(int line) const {
 }
 
 // Return contents of function matrix formatted for display
-QByteArray Function::getContents(){
+QByteArray Function::getContents() const{
     QByteArray contents;
     for (int i = 0; i < matrixLen; i++){
         QVector<QByteArray> line = getLine(i);
@@ -56,14 +56,15 @@ QByteArray Function::getContents(){
 }
 
 // Retrun address at given index
-QString Function::getAddressAt(int index){
-    if (index >= 0 && index < matrixLen)
-        return functionMatrix.at(index)[0];
-    else
-        return "";
+const QString &Function::getAddressAt(int index) const {
+    if (index >= 0 && index < matrixLen) {
+        return functionMatrix.at(index).at(0);
+    } else {
+        return QLatin1String("");
+    }
 }
 
-bool Function::isEmpty(){
+bool Function::isEmpty() const {
     if (matrixLen > 0)
         return true;
     else
@@ -74,18 +75,18 @@ int Function::getMatrixLen() const {
     return matrixLen;
 }
 
-QString Function::getName(){
+const QString &Function::getName() const{
     return name;
 }
 
-QString Function::getAddress(){
+const QString & Function::getAddress() const {
     return address;
 }
 
-QString Function::getSection(){
+const QString & Function::getSection() const {
     return section;
 }
 
-QString Function::getFileOffset(){
+const QString & Function::getFileOffset() const {
     return fileOffset;
 }

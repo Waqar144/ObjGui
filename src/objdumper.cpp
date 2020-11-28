@@ -9,15 +9,15 @@ ObjDumper::ObjDumper()
 {
     // Set default options
     useCustomBinary = false;
-    objdumpBinary = "objdump";
-    outputSyntax = "intel";
-    disassemblyFlag = "-d";
-    demangleFlag = "";
-    target = "";
+    objdumpBinary = QStringLiteral("objdump");
+    outputSyntax = QStringLiteral("intel");
+    disassemblyFlag = QStringLiteral("-d");
+    demangleFlag = QLatin1String("");
+    target = QLatin1String("");
     insnwidth = 10;
 
-    addressRegex.setPattern("[0-9a-f]+");
-    hexBytesRegex.setPattern("[0-9a-f ]+");
+    addressRegex.setPattern(QStringLiteral("[0-9a-f]+"));
+    hexBytesRegex.setPattern(QStringLiteral("[0-9a-f ]+"));
 }
 
 // Runs objdump given arguments and returns outout
@@ -27,16 +27,16 @@ QString ObjDumper::getDump(QStringList argsList){
     if (useCustomBinary && objdumpBinary != "")
         objdumpStr = objdumpBinary;
     else
-        objdumpStr = "objdump";
+        objdumpStr = QStringLiteral("objdump");
 
     QProcess *process = new QProcess(0);
     process->start(objdumpStr, argsList);
 
     if (!process->waitForStarted())
-        return "";
+        return QLatin1String("");
 
     if (!process->waitForFinished())
-        return "";
+        return QLatin1String("");
 
     QByteArray output;
     output.append(process->readAllStandardError());
@@ -51,8 +51,8 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
    const QString dump = getDisassembly(file);
 
     // Split dump into vector of string references to each function
-    const QVector<QStringRef> dumpList = dump.splitRef("\n\n");
-    QString currentSection = "";
+    const QVector<QStringRef> dumpList = dump.splitRef(QStringLiteral("\n\n"));
+    QString currentSection = QLatin1String("");
 
     // Parse dumplist
     for (int listIndex = 0; listIndex < dumpList.length(); listIndex++){
@@ -61,6 +61,7 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
         // Parse first word
         QString tmp;
         int i = 0;
+        tmp.reserve(16);
         while (i < dumpStr.length()-1 && dumpStr.at(i) != QChar(' ')){
             tmp.append(dumpStr.at(i));
             i++;
@@ -71,14 +72,12 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
             currentSection = dumpStr.mid(23).toString();
             currentSection.chop(1);
 
-        } else if (tmp.startsWith('0') /*tmp is address*/){
-            QString name = QString();
-            QString address = QString();
+        } else if (tmp.startsWith(QLatin1Char('0')) /*tmp is address*/){
+            QVarLengthArray<char> name;
+            // Get function address
+            QString address = std::move(tmp);
             QString fileOffest = QString();
             QVector< QVector<QByteArray> > functionMatrix;
-
-            // Get function address
-            address = tmp;
 
             // Get file offset
             fileOffest = getFileOffset(address, baseOffsets).at(0);
@@ -86,10 +85,13 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
             // Get function name
             i += 2;
             while (i < dumpStr.length()-1 && dumpStr.at(i) != QChar('\n')){
-                name.append(dumpStr.at(i));
+                name.append(dumpStr.at(i).toLatin1());
                 i++;
             }
-            name.chop(2);
+
+            name.removeLast();
+            name.removeLast();
+            name.append(0);
 
             // Parse function contents
             const QStringRef contents = dumpStr.mid(i);
@@ -106,7 +108,8 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
             }
 
             // Add to functionList
-            Function function(name, address, currentSection, fileOffest, functionMatrix);
+            QString namestr(name.data());
+            Function function(namestr, address, currentSection, fileOffest, functionMatrix);
             functionList.push_back(function);
         }
 
@@ -154,7 +157,6 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
         opt.reserve(line.length() - pos);
         while (pos < line.length() && line.at(pos) != QChar(' ')){
             opt.append(line.at(pos));
-//            opt.append(line.at(pos));
             pos++;
         }
         pos++;
@@ -172,11 +174,6 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
         row[4] = QByteArrayLiteral("");
 
         // Remove extra space from byte array
-//        row[0].squeeze();
-//        row[1].squeeze();
-//        row[2].squeeze();
-//        row[3].squeeze();
-//        row[4].squeeze();
     } else {
         row[0] = "";
         row[1] = "";
@@ -188,34 +185,59 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
     return row;
 }
 
-QByteArray ObjDumper::parseAddress(QString address){
-    address = address.trimmed();
-    QRegularExpressionMatch addressMatch = addressRegex.match(address);
+QByteArray ObjDumper::parseAddress(QString address) {
+    QByteArray ret = QByteArrayLiteral("0x");
+    ret.reserve(2 + 4);
+    for (int i = 0; i < address.length(); ++i) {
+        if (address.at(i).isSpace())
+            continue;
 
-    if (addressMatch.hasMatch() && addressMatch.capturedLength(0) == address.length()){
-        address = QStringLiteral("0x") + address;
+        bool addr = true;
+        int j = i;
+        while (j < address.length()) {
+            if (!address.at(j).isDigit()) {
+                char c = address.at(j).toLatin1();
+                bool hex = c >= 97 && c <= 102;
+                if (!hex) {
+                    addr = false;
+                    break;
+                }
+            }
+            j++;
+        }
 
-        return address.toLocal8Bit();
-    } else {
-        return QByteArrayLiteral("");
+        if (addr) {
+            for (int ii = i; ii < (j - i); ii++) {
+                ret.append(address.at(i).toLatin1());
+            }
+//            ret.append(address.mid(i, j - i).toLocal8Bit());
+            return ret;
+        }
     }
+    return QByteArrayLiteral("");
 }
 
-QByteArray ObjDumper::parseHexBytes(QByteArray byteString){
-    QRegularExpressionMatch hexMatch = hexBytesRegex.match(byteString);
+QByteArray ObjDumper::parseHexBytes(QByteArray byteString) {
 
-    if (hexMatch.hasMatch() && hexMatch.capturedLength(0) == byteString.length()) {
-        byteString.replace(" ", "");
-        int paddingLength = (insnwidth * 2) - byteString.length();
-        QByteArray padding;
-        padding.fill(' ', paddingLength);
-        byteString.append(padding);
-
-        return byteString;
-
-    } else {
-        return QByteArrayLiteral("");
+    QByteArray ret;
+    ret.reserve(byteString.size());
+    for (int i = 0; i < byteString.length(); ++i) {
+        if (byteString.at(i) == ' ')
+            continue;
+        char c = byteString.at(i);
+        if (isdigit(c) || (c >= 97 && c <= 102)) {
+            ret.append(c);
+            continue;
+        } else {
+            return QByteArrayLiteral("");
+        }
     }
+    //insert padding
+    int paddingLength = (insnwidth * 2) - ret.length();
+    QByteArray padding;
+    padding.fill(' ', paddingLength);
+    ret.append(padding);
+    return ret;
 }
 
 // Parses result of all contents(objdump -s) and populates section list
@@ -266,9 +288,10 @@ QVector<QByteArray> ObjDumper::parseSectionLine(QStringRef line){
 
     // Get Address
     QByteArray address;
+    address.reserve(4);
     int pos = 1;
     while (pos < line.length() && line.at(pos) != QChar(' ')){
-        address.append(line.at(pos));
+        address.append(line.at(pos).toLatin1());
         pos++;
     }
     row[0] = address;
@@ -290,8 +313,8 @@ QVector<QByteArray> ObjDumper::parseSectionLine(QStringRef line){
     // Ignore ascii
 
     // Remove extra space from byte array
-    row[0].squeeze();
-    row[1].squeeze();
+//    row[0].squeeze();
+//    row[1].squeeze();
 
     return row;
 }
@@ -448,8 +471,8 @@ QVector<QString> ObjDumper::getBaseOffset(QString file){
 // Get file offset of virtual memory address as vecotor [hex value, decimal value]
 QVector<QString> ObjDumper::getFileOffset(QString targetAddress, QVector<QString> baseOffsets){
     QVector<QString> fileOffset(2);
-    fileOffset[0] = "";
-    fileOffset[1] = "";
+    fileOffset[0] = QLatin1String("");
+    fileOffset[1] = QLatin1String("");
     bool targetAddrOk;
     bool baseAddrOk;
     bool baseOffsetOk;
@@ -460,7 +483,7 @@ QVector<QString> ObjDumper::getFileOffset(QString targetAddress, QVector<QString
     if (targetAddrOk && baseAddrOk && baseOffsetOk){
         if (targetAddr >= baseAddr){
             qlonglong targetOffset = (targetAddr - baseAddr) + baseOffset;
-            fileOffset[0] = "0x" + QString::number(targetOffset, 16);
+            fileOffset[0] = QStringLiteral("0x") + QString::number(targetOffset, 16);
             fileOffset[1] = QString::number(targetOffset);
         }
     }

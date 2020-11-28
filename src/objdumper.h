@@ -27,7 +27,6 @@ public:
     void setDisassemblyFlag(QString flag);
     void setDemangleFlag(QString flag);
     void setTarget(QString trgt);
-
 private:
     QString getDump(QStringList argsList);
     QString getDisassembly(QString file);

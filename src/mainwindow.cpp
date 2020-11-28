@@ -177,11 +177,12 @@ void MainWindow::loadBinary(QString file){
         clearUi();
 
         if (canDisassemble(file)) {
-            QProgressDialog progress("Loading Disassembly", "", 0, 5, this);
+            QProgressDialog progress("Loading Disassembly", "", 0, 4, this);
             progress.setCancelButton(0);
             progress.setWindowModality(Qt::WindowModal);
-            progress.show();
+            progress.setMinimumDuration(500);
             progress.setValue(0);
+            progress.show();
 
             // Disassemble in seperate thread
             QElapsedTimer t; t.start();
@@ -226,7 +227,7 @@ void MainWindow::loadBinary(QString file){
             ui->stringsAddressBrowser->setPlainText(disassemblyCore.getStringsAddresses());
             ui->stringsBrowser->setPlainText(disassemblyCore.getStrings());
 
-            progress.setValue(6);
+            progress.setValue(5);
         }
     }
 }

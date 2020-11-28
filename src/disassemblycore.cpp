@@ -22,10 +22,10 @@ QVector<QString> DisassemblyCore::getBaseOffsets(){
 void DisassemblyCore::disassemble(QString file){
     baseOffsets = objDumper.getBaseOffset(file);
 
-    functionData.clear();
-    QFuture< QVector<Function> > futureFunctionData = QtConcurrent::run(&objDumper, &ObjDumper::getFunctionData, file, baseOffsets);
     sectionData.clear();
     QFuture< QVector<Section> > futureSectionData = QtConcurrent::run(&objDumper, &ObjDumper::getSectionData, file);
+    functionData.clear();
+    QFuture< QVector<Function> > futureFunctionData = QtConcurrent::run(&objDumper, &ObjDumper::getFunctionData, file, baseOffsets);
     QFuture<QVector< QVector<QString> > > futureStrings = QtConcurrent::run(&stringsDumper, &StringsDumper::dumpStrings, file, baseOffsets);
 
     sectionData = futureSectionData.result();
@@ -58,10 +58,9 @@ void DisassemblyCore::xrefStrings(){
 
                 if (strIndex > 0){
                     QString str = strings.getStringAt(strIndex);
-//                    qDebug() << str;
 
                     if(!str.isEmpty()){
-                        itr->setXrefData(lineNum, str);
+                        itr->setXrefData(lineNum, std::move(str));
                     }
                 }
             }
@@ -69,10 +68,7 @@ void DisassemblyCore::xrefStrings(){
     }
 }
 
-int gi =0;
 QString DisassemblyCore::extractAddress(const QByteArray& s) {
-//    s="*0x5bf402(%rip)        # 63cbf8 <QPushButton::qt_metacall(QMetaObject::Call, int, void**)@Qt_5>";
-//    s="*0x5bca62(%rip)        # 63f598 <new_aspell_config>";
     for (int i = 0; i < s.length(); ++i) {
         //keep moving forward till we find a digit
         while (i < s.length() && ! isdigit(s.at(i)))
@@ -101,13 +97,8 @@ QString DisassemblyCore::extractAddress(const QByteArray& s) {
 
         if (count >= 4) {
             QString ret = s.mid(start, i - start);
-//            qWarning() << s;
-//            qWarning() << "Ret: " << ret;
-//            gi++;
-//            qWarning() << gi << " -------------------";
             return ret;
         }
-//        return QLatin1String("");
     }
     return QLatin1String("");
 
@@ -188,9 +179,10 @@ QStringList DisassemblyCore::getFunctionNames(){
     int numFunctions = functionData.length();
 
     if (numFunctions > 0){
+        functionNames.reserve(numFunctions);
         for (int i = 0; i < numFunctions; i++){
-            Function function = functionData.at(i);
-            QString name = function.getName();
+            const Function& function = functionData.at(i);
+            const QString& name = function.getName();
             functionNames.append(name);
         }
     }
