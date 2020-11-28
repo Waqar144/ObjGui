@@ -26,7 +26,7 @@ void DisassemblyCore::disassemble(QString file){
     QFuture< QVector<Section> > futureSectionData = QtConcurrent::run(&objDumper, &ObjDumper::getSectionData, file);
     functionData.clear();
     QFuture< QVector<Function> > futureFunctionData = QtConcurrent::run(&objDumper, &ObjDumper::getFunctionData, file, baseOffsets);
-    QFuture<QVector< QVector<QString> > > futureStrings = QtConcurrent::run(&stringsDumper, &StringsDumper::dumpStrings, file, baseOffsets);
+    QFuture<QVector< QVector<QString> > > futureStrings = QtConcurrent::run(&StringsDumper::dumpStrings, file, baseOffsets);
 
     sectionData = futureSectionData.result();
     strings.setStringsData(futureStrings.result());

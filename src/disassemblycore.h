@@ -63,7 +63,6 @@ private:
 
 
     ObjDumper objDumper;
-    StringsDumper stringsDumper;
 };
 
 #endif // DISASSEMBLYCORE_H

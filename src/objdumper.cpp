@@ -21,7 +21,7 @@ ObjDumper::ObjDumper()
 }
 
 // Runs objdump given arguments and returns outout
-QString ObjDumper::getDump(QStringList argsList){
+QByteArray ObjDumper::getDump(QStringList argsList){
     QString objdumpStr;
 
     if (useCustomBinary && objdumpBinary != "")
@@ -33,10 +33,10 @@ QString ObjDumper::getDump(QStringList argsList){
     process->start(objdumpStr, argsList);
 
     if (!process->waitForStarted())
-        return QLatin1String("");
+        return ("");
 
     if (!process->waitForFinished())
-        return QLatin1String("");
+        return ("");
 
     QByteArray output;
     output.append(process->readAllStandardError());
@@ -59,21 +59,15 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
         const QStringRef& dumpStr = dumpList.at(listIndex);
 
         // Parse first word
-        QString tmp;
-        int i = 0;
-        tmp.reserve(16);
-        while (i < dumpStr.length()-1 && dumpStr.at(i) != QChar(' ')){
-            tmp.append(dumpStr.at(i));
-            i++;
-        }
+        auto pos = dumpStr.indexOf(QLatin1Char(' '));
+        QString tmp = dumpStr.left(pos).toString();
+        int i = pos == -1 ? dumpStr.length() - 1 : pos;
 
         // Check if section or function
         if (tmp == QStringLiteral("Disassembly")){
-            currentSection = dumpStr.mid(23).toString();
-            currentSection.chop(1);
+            currentSection = dumpStr.mid(22).toString();
 
         } else if (tmp.startsWith(QLatin1Char('0')) /*tmp is address*/){
-            QVarLengthArray<char> name;
             // Get function address
             QString address = std::move(tmp);
             QString fileOffest = QString();
@@ -84,33 +78,30 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
 
             // Get function name
             i += 2;
-            while (i < dumpStr.length()-1 && dumpStr.at(i) != QChar('\n')){
-                name.append(dumpStr.at(i).toLatin1());
-                i++;
-            }
-
-            name.removeLast();
-            name.removeLast();
-            name.append(0);
+            int endlinePos = dumpStr.indexOf(QLatin1Char('\n'), i);
+            QString name = dumpStr.mid(i, endlinePos - i - 2).toString();
 
             // Parse function contents
             const QStringRef contents = dumpStr.mid(i);
-            const QVector<QStringRef> lines = contents.split("\n");
+            const QVector<QStringRef> lines = contents.split(QLatin1Char('\n'));
 
             for (int lineNum = 0; lineNum < lines.length()-1; lineNum++){
                 const QStringRef& line = lines.at(lineNum);
-                const QVector<QByteArray> row = parseFunctionLine(line);
+                QVector<QByteArray> row = parseFunctionLine(line);
 
                 if (!row[0].isEmpty()){
-                    functionMatrix.append(row);
+                    functionMatrix.append(std::move(row));
                 }
 
             }
 
             // Add to functionList
-            QString namestr(name.data());
-            Function function(namestr, address, currentSection, fileOffest, functionMatrix);
-            functionList.push_back(function);
+            Function function(std::move(name),
+                              std::move(address),
+                              std::move(currentSection),
+                              std::move(fileOffest),
+                              std::move(functionMatrix));
+            functionList.push_back(std::move(function));
         }
 
 
@@ -125,11 +116,10 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
         int pos = 0;
 
         // Get address
-        QString address;
-        address.reserve(line.size());
-
+        QByteArray address;
+        address.reserve(16);
         while (pos < line.length() && line.at(pos) != QChar(':')){
-            address.append(line.at(pos));
+            address.append(line.at(pos).toLatin1());
             pos++;
         }
         pos++;
@@ -153,15 +143,16 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
         }
 
         // Get optcode
-        QString opt;
-        opt.reserve(line.length() - pos);
+        QByteArray opt;
+        int x = line.length() - pos;
+        opt.reserve(x > 0 ? x : 1);
         while (pos < line.length() && line.at(pos) != QChar(' ')){
-            opt.append(line.at(pos));
+            opt.append(line.at(pos).toLatin1());
             pos++;
         }
         pos++;
 
-        row[2] = opt.toLocal8Bit();
+        row[2] = std::move(opt);
 
         while (pos < line.length() && line.at(pos) == QChar(' ')){
             pos++;
@@ -185,18 +176,18 @@ QVector<QByteArray> ObjDumper::parseFunctionLine(const QStringRef& line){
     return row;
 }
 
-QByteArray ObjDumper::parseAddress(QString address) {
+QByteArray ObjDumper::parseAddress(const QByteArray &address) {
     QByteArray ret = QByteArrayLiteral("0x");
     ret.reserve(2 + 4);
     for (int i = 0; i < address.length(); ++i) {
-        if (address.at(i).isSpace())
+        if ( isspace(address.at(i)) )
             continue;
 
         bool addr = true;
         int j = i;
         while (j < address.length()) {
-            if (!address.at(j).isDigit()) {
-                char c = address.at(j).toLatin1();
+            if ( !isdigit(address.at(j)) ) {
+                char c = address.at(j);
                 bool hex = c >= 97 && c <= 102;
                 if (!hex) {
                     addr = false;
@@ -208,16 +199,15 @@ QByteArray ObjDumper::parseAddress(QString address) {
 
         if (addr) {
             for (int ii = i; ii < (j - i); ii++) {
-                ret.append(address.at(i).toLatin1());
+                ret.append(address.at(i));
             }
-//            ret.append(address.mid(i, j - i).toLocal8Bit());
             return ret;
         }
     }
     return QByteArrayLiteral("");
 }
 
-QByteArray ObjDumper::parseHexBytes(QByteArray byteString) {
+QByteArray ObjDumper::parseHexBytes(const QByteArray& byteString) {
 
     QByteArray ret;
     ret.reserve(byteString.size());
@@ -350,12 +340,12 @@ QString ObjDumper::getFileFormat(QString file){
 }
 
 // Get disassembly: objdump -d
-QString ObjDumper::getDisassembly(QString file){
+QByteArray ObjDumper::getDisassembly(QString file){
     QStringList argsList;
     if (!target.isEmpty())
         argsList << target;
     argsList << "--insn-width=" + QString::number(insnwidth) << demangleFlag << "-M" << outputSyntax << disassemblyFlag << file;
-    QString disassembly = getDump(argsList);
+    QByteArray disassembly = getDump(argsList);
     return removeHeading(disassembly, 4);
 }
 
@@ -365,7 +355,7 @@ QString ObjDumper::getSymbolsTable(QString file){
     if (!target.isEmpty())
         argsList << target;
     argsList << demangleFlag << "-t" << file;
-    QString symbolsTable = getDump(argsList);
+    QByteArray symbolsTable = getDump(argsList);
     return removeHeading(symbolsTable, 4);
 }
 
@@ -375,7 +365,7 @@ QString ObjDumper::getRelocationEntries(QString file){
     if (!target.isEmpty())
         argsList << target;
     argsList << demangleFlag << "-R" << file;
-    QString relocationEntries = getDump(argsList);
+    QByteArray relocationEntries = getDump(argsList);
     return removeHeading(relocationEntries, 4);
 }
 
@@ -385,7 +375,7 @@ QString ObjDumper::getContents(QString file){
     if (!target.isEmpty())
         argsList << target;
     argsList << "-s" << file;
-    QString contents = getDump(argsList);
+    QByteArray contents = getDump(argsList);
     return removeHeading(contents, 3);
 }
 
@@ -395,7 +385,7 @@ QString ObjDumper::getHeaders(QString file){
     if (!target.isEmpty())
         argsList << target;
     argsList << "-a" << "-f" << "-p" << file;
-    QString headers = getDump(argsList);
+    QByteArray headers = getDump(argsList);
     return removeHeading(headers, 3);
 }
 
@@ -492,7 +482,7 @@ QVector<QString> ObjDumper::getFileOffset(QString targetAddress, QVector<QString
 }
 
 // Removes heading(first [numLines] lines of objdump output)
-QString ObjDumper::removeHeading(QString dump, int numLines){
+QByteArray ObjDumper::removeHeading(QByteArray dump, int numLines){
     int i = 0;
     int newlineCount = 0;
     while (i < dump.length() && newlineCount < numLines){

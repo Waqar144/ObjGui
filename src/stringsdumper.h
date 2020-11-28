@@ -1,16 +1,14 @@
 #ifndef STRINGSDUMPER_H
 #define STRINGSDUMPER_H
 
-#include "QString"
+#include <QString>
 
 class StringsDumper
 {
 public:
-    StringsDumper();
-    QVector< QVector<QString> > dumpStrings(QString file, QVector<QString> baseOffsets);
+    static QVector< QVector<QString> > dumpStrings(QString file, const QVector<QString>& baseOffsets);
 private:
-    bool isPrintableChar(char c);
-    QString getAddressFromOffset(QString offset, QVector<QString> baseOffsets);
+    static QString getAddressFromOffset(QString offset, const QVector<QString>& baseOffsets);
 };
 
 #endif // STRINGSDUMPER_H

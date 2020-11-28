@@ -27,14 +27,15 @@ public:
     void setDisassemblyFlag(QString flag);
     void setDemangleFlag(QString flag);
     void setTarget(QString trgt);
+
 private:
-    QString getDump(QStringList argsList);
-    QString getDisassembly(QString file);
+    QByteArray getDump(QStringList argsList);
+    QByteArray getDisassembly(QString file);
     QString getContents(QString file);
-    QString removeHeading(QString dump, int numLines);
+    QByteArray removeHeading(QByteArray dump, int numLines);
     QString getHeading(QString dump, int numLines);
-    QByteArray parseAddress(QString address);
-    QByteArray parseHexBytes(QByteArray byteString);
+    QByteArray parseAddress(const QByteArray& address);
+    QByteArray parseHexBytes(const QByteArray& byteString);
     QString parseDumpForErrors(QString dump);
     QVector<QByteArray> parseFunctionLine(const QStringRef& line);
     QVector<QByteArray> parseSectionLine(QStringRef line);
