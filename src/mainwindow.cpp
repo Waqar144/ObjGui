@@ -79,6 +79,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->addressValueLabel->setFont(mono);
     ui->fileOffsetValueLabel->setFont(mono);
     ui->sectionValueLabel->setFont(mono);
+    ui->funcFilterLineEdit->setPlaceholderText("Filter....");
 
     // Monospace Bold
     int monoBoldId = QFontDatabase::addApplicationFont(":/fonts/Anonymous Pro B.ttf");
@@ -1243,5 +1244,15 @@ void MainWindow::on_removepltCheckBox_stateChanged(int arg1)
 
 void MainWindow::on_funcFilterLineEdit_textChanged(const QString &arg1)
 {
+    QString search = ui->funcFilterLineEdit->text();
+    if (arg1.isEmpty()) {
+        ui->functionList->clear();
+        ui->functionList->addItems(disassemblyCore.getFunctionNames());
+        return;
+    }
 
+    ui->functionList->clear();
+    QStringList functions = disassemblyCore.getFunctionNames();
+    functions = functions.filter(arg1, Qt::CaseInsensitive);
+    ui->functionList->addItems(functions);
 }
