@@ -168,13 +168,12 @@ void DisassemblyCore::setTarget(QString trgt){
 QStringList DisassemblyCore::getFunctionNames(){
     QStringList functionNames;
     int numFunctions = functionData.length();
+    functionNames.reserve(numFunctions);
 
-    if (numFunctions > 0){
-        for (int i = 0; i < numFunctions; i++){
-            Function function = functionData.at(i);
-            QString name = function.getName();
-            functionNames.append(name);
-        }
+    for (int i = 0; i < numFunctions; i++){
+        const Function& function = functionData.at(i);
+        QString name = function.getName();
+        functionNames.append(std::move(name));
     }
 
     return functionNames;
@@ -184,8 +183,8 @@ Function DisassemblyCore::getFunction(QString name){
     int numFunctions = functionData.length();
 
     for (int i = 0; i < numFunctions; i++){
-        Function currentFunction = functionData.at(i);
-        QString currentName = currentFunction.getName();
+        const Function& currentFunction = functionData.at(i);
+        const QString& currentName = currentFunction.getName();
         if (currentName == name)
             return currentFunction;
     }
@@ -198,8 +197,7 @@ Function DisassemblyCore::getFunction(int index){
     int numFunctions = functionData.length();
 
     if (numFunctions > 0){
-        Function function = functionData.at(index);
-        return function;
+        return functionData.at(index);
     }
 
     Function function;
@@ -210,8 +208,8 @@ int DisassemblyCore::getFunctionIndex(QString functionName){
     int numFunctions = functionData.length();
 
     for (int i = 0; i < numFunctions; i++){
-        Function currentFunction = functionData.at(i);
-        QString currentName = currentFunction.getName();
+        const Function& currentFunction = functionData.at(i);
+        const QString& currentName = currentFunction.getName();
         if (currentName == functionName)
             return i;
     }
