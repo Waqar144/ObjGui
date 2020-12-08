@@ -255,8 +255,8 @@ void MainWindow::loadBinary(QString file){
 void MainWindow::on_actionOpen_triggered()
 {
     // Prompt user for file
-//    QString file = QFileDialog::getOpenFileName(this, tr("Open File"), files.getCurrentDirectory(), tr("All (*)"));
-    QString file = "/home/waqar/Projects/QtProjs/QOwnNotes/src/build-QOwnNotes-Desktop-Profile/QOwnNotes";
+    QString file = QFileDialog::getOpenFileName(this, tr("Open File"), files.getCurrentDirectory(), tr("All (*)"));
+//    QString file = "/home/waqar/Projects/QtProjs/QOwnNotes/src/build-QOwnNotes-Desktop-Profile/QOwnNotes";
 
     // Update current directory and load file
     if (file != ""){
