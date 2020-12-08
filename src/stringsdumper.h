@@ -2,14 +2,16 @@
 #define STRINGSDUMPER_H
 
 #include "QString"
+#include <QPair>
+#include <tuple>
 
 class StringsDumper
 {
 public:
     StringsDumper() = default;
-    QVector< QVector<QString> > dumpStrings(QString file, const QVector<QString>& baseOffsets);
+    std::tuple<QVector<QByteArray>, QVector<QByteArray>> dumpStrings(QString file, const QVector<QString>& baseOffsets);
 private:
-    QString getAddressFromOffset(qint64 offset, qint64 baseAddr, qint64 baseOffset);
+    QByteArray getAddressFromOffset(qint64 offset, qint64 baseAddr, qint64 baseOffset);
 };
 
 #endif // STRINGSDUMPER_H

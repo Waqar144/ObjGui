@@ -5,6 +5,8 @@
 
 #include "QDebug"
 
+#include <QSettings>
+
 ObjDumper::ObjDumper()
 {
     // Set default options
@@ -49,6 +51,7 @@ QByteArray ObjDumper::getDump(QStringList argsList){
 // Parses disassembly and populates function list
 QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> baseOffsets) {
     QVector<Function> functionList;
+    bool removePlt = QSettings().value("removePlt", true).toBool();
 
     const QByteArray dump = getDisassembly(file);
     int idx = dump.indexOf(QByteArrayLiteral("\n\n"));
@@ -81,6 +84,11 @@ QVector<Function> ObjDumper::getFunctionData(QString file, QVector<QString> base
             int endlinePos = dump.indexOf('\n', i);
             QString name = dump.mid(i, endlinePos - i - 2);
             i = endlinePos;
+            if (removePlt && (name.endsWith("@plt") || name.endsWith("[clone .cold]"))) {
+                prev = idx + 2; // +2 to skip \n\n
+                idx = dump.indexOf("\n\n", prev);
+                continue;
+            }
 
             // Parse function contents
 

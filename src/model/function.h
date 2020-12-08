@@ -12,13 +12,13 @@ public:
     int getMatrixLen();
     bool isEmpty();
     void setXrefData(int index, QString xrefData);
-    QString getName();
+    const QString& getName() const;
     QString getAddress();
     QString getSection();
     QString getFileOffset();
     QString getAddressAt(int index);
     std::array<QByteArray, 5> getLine(int line);
-    QByteArray getOptStr(int line);
+    const QByteArray& getOptStr(int line);
     QByteArray getContents();
 private:
     QString name;

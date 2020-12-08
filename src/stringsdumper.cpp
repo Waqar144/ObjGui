@@ -6,11 +6,14 @@
 #include <QDebug>
 
 // Extract strings from file along with their file offset and vma
-QVector< QVector<QString> > StringsDumper::dumpStrings(QString filename, const QVector<QString> &baseOffsets){
-    QVector< QVector<QString> > stringsData;
+std::tuple<QVector<QByteArray>, QVector<QByteArray>>
+StringsDumper::dumpStrings(QString filename, const QVector<QString> &baseOffsets){
+    QVector<QByteArray> strings;
+    QVector<QByteArray> adresses;
+
     QFile file(filename);
     if(!file.open(QIODevice::ReadOnly))
-        return stringsData;
+        return {};
 
     // Seek to start of first section
     bool ok{};
@@ -27,7 +30,10 @@ QVector< QVector<QString> > StringsDumper::dumpStrings(QString filename, const Q
             continue;
 
         int pos = i;
-        QString str(c);
+
+        QByteArray str;
+        str.reserve(12);
+        str.append(c);
 
         for (int j = pos; j < bytes.length(); j++) {
             if (isprint(bytes[j])) {
@@ -41,25 +47,23 @@ QVector< QVector<QString> > StringsDumper::dumpStrings(QString filename, const Q
         }
 
         if(str.length() >= 4){
-            QVector<QString> stringData(2);
-            stringData[0] = QStringLiteral("0x") + getAddressFromOffset(pos - 1, startAddr, startPos);
-            stringData[1] = str;
-
-            stringsData.append(stringData);
+            strings.append(str);
+            auto res = getAddressFromOffset(pos - 1, startAddr, startPos);
+            adresses.append(QByteArrayLiteral("0x") + res);
         }
     }
 
-    return stringsData;
+    return {strings, adresses};
 }
 
 // Return virtual memory address of file offset given base offsets
-QString StringsDumper::getAddressFromOffset(qint64 offset, qint64 baseAddr, qint64 baseOffset){
+QByteArray StringsDumper::getAddressFromOffset(qint64 offset, qint64 baseAddr, qint64 baseOffset) {
 
     qlonglong offsetFromBase = offset - baseOffset;
     if (offsetFromBase >= 0) {
         qlonglong targetAddress = baseAddr + offsetFromBase;
-        return QString::number(targetAddress, 16);
+        return QByteArray::number(targetAddress, 16);
     }
 
-    return QString();
+    return {};
 }

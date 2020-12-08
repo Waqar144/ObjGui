@@ -6,27 +6,24 @@ Strings::Strings(){
     matrixLen = 0;
 }
 
-Strings::Strings(QVector<QVector<QString> > stringsData){
-    stringsMatrix = stringsData;
-    matrixLen = stringsMatrix.length();
-}
-
 // Sets the strings matrix
-void Strings::setStringsData(QVector<QVector<QString> > stringsData){
-    stringsMatrix = stringsData;
-    matrixLen = stringsMatrix.length();
+void Strings::setStringsData(std::tuple<QVector<QByteArray>, QVector<QByteArray> > &&data) {
+    strings = std::move(std::get<0>(data));
+    addresses = std::move(std::get<1>(data));
+
+    matrixLen = addrsLong.length();
 }
 
 // Returns the index of a target address
-int Strings::getIndexByAddress(QString targetAddress){
-    if (!stringsMatrix.isEmpty()){
+int Strings::getIndexByAddress(QByteArray targetAddress) {
+    if (!addresses.isEmpty()) {
         // Binary search
         int upperLimit = matrixLen - 1;
         int lowerLimit = 0;
         int currentIndex = upperLimit / 2;
 
         while (lowerLimit < upperLimit && currentIndex != 0){
-            const QString& currentAddress = stringsMatrix.at(currentIndex).at(0);
+            const QByteArray& currentAddress = addresses.at(currentIndex);
 
             if (currentAddress == targetAddress){
                 return currentIndex;
@@ -40,9 +37,9 @@ int Strings::getIndexByAddress(QString targetAddress){
 
         }
         // Final checks
-        if (stringsMatrix.at(currentIndex).at(0) == targetAddress){
+        if (addresses.at(currentIndex) == targetAddress){
             return currentIndex;
-        } else if (matrixLen > 1 && stringsMatrix.at(1).at(0) == targetAddress){
+        } else if (matrixLen > 1 && addresses.at(1) == targetAddress){
             return 1;
         }
     }
@@ -53,15 +50,15 @@ int Strings::getIndexByAddress(QString targetAddress){
 // Returns address at given index
 QString Strings::getAddressAt(int index){
     if(index >= 0 && index < matrixLen)
-        return stringsMatrix[index][0];
+        return addresses.at(index);
     else
         return "";
 }
 
 QString Strings::getStringAt(int index){
     if(index >= 0 && index < matrixLen){
-        QString str = stringsMatrix[index][1].replace('\n', "\\n");
-        return str;
+        QString str = strings.at(index);
+        return str.replace('\n', "\\n");
     } else {
         return QLatin1String("");
     }
@@ -69,22 +66,22 @@ QString Strings::getStringAt(int index){
 
 // Return strings formatted for display
 QString Strings::getStrings(){
-    QString strings = "";
+    QString ret = "";
     for (int i = 0; i < matrixLen; i++){
-        QString str = stringsMatrix[i][1];
+        QString str = strings.at(i);
         // Escape new line characters
         str.replace('\n', "\\n");
-        strings.append(str + "\n");
+        ret.append(str + "\n");
     }
-    return strings;
+    return ret;
 }
 
 // Return addresses of strings formatted for display
 QString Strings::getStringsAddresses(){
-    QString addresses = "";
+    QString ret = "";
     for (int i = 0; i < matrixLen; i++){
-        addresses.append(stringsMatrix[i][0] + "\n");
+        ret.append(addresses.at(i) + '\n');
     }
-    return addresses;
+    return ret;
 }
 

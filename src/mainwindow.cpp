@@ -107,7 +107,7 @@ MainWindow::MainWindow(QWidget *parent) :
         ui->syntaxComboBox->setCurrentIndex(0);
         disassemblyCore.setOutputSyntax("intel");
 
-    }else if (settings.value("syntax", "intel") == "att"){
+    } else if (settings.value("syntax", "intel") == "att"){
         ui->actionAtt->setChecked(true);
         ui->syntaxComboBox->setCurrentIndex(1);
         disassemblyCore.setOutputSyntax("att");
@@ -126,6 +126,17 @@ MainWindow::MainWindow(QWidget *parent) :
     }
     disassemblyCore.setobjdumpBinary(settings.value("customBinary", "").toString());
     ui->customBinaryLineEdit->setText(settings.value("customBinary", "").toString());
+
+
+    auto removePlt = settings.value("removePlt", true).toBool();
+    ui->removepltCheckBox->setChecked(removePlt);
+
+    auto showRightBar = settings.value("showRightBar", false).toBool();
+    ui->actionShow_right_side_bar->setChecked(showRightBar);
+
+    if (!showRightBar) {
+        ui->Infowidget->setVisible(false);
+    }
 
     // Style
     disHighlighter = new DisassemblyHighlighter(ui->codeBrowser->document(), "Default");
@@ -183,12 +194,15 @@ void MainWindow::loadBinary(QString file){
             progress.setMinimumDuration(500);
             progress.setValue(0);
 
+            QElapsedTimer t;
+            t.start();
             // Disassemble in seperate thread
             QFuture<void> disassemblyThread = QtConcurrent::run(&disassemblyCore, &DisassemblyCore::disassemble, file);
 
             while (!disassemblyThread.isFinished()){
                 qApp->processEvents(QEventLoop::ExcludeUserInputEvents);
             }
+            qWarning() << "Loading took : " << t.elapsed();
 
             progress.setValue(1);
 
@@ -208,24 +222,29 @@ void MainWindow::loadBinary(QString file){
 
             progress.setValue(2);
 
-            displayHexData();
+//            displayHexData();
 
             progress.setValue(3);
 
             setUpdatesEnabled(false);
 
-            ui->fileFormatlabel->setText(disassemblyCore.getFileFormat(file));
-            ui->symbolsBrowser->setPlainText(disassemblyCore.getSymbolsTable(file));
-            ui->relocationsBrowser->setPlainText(disassemblyCore.getRelocationEntries(file));
-            ui->headersBrowser->setPlainText(disassemblyCore.getHeaders(file));
+            bool showRightBar = QSettings().value("showRightBar", false).toBool();
+            if (showRightBar) {
+                ui->fileFormatlabel->setText(disassemblyCore.getFileFormat(file));
+                ui->symbolsBrowser->setPlainText(disassemblyCore.getSymbolsTable(file));
+                ui->relocationsBrowser->setPlainText(disassemblyCore.getRelocationEntries(file));
+                ui->headersBrowser->setPlainText(disassemblyCore.getHeaders(file));
+            }
             setUpdatesEnabled(true);
 
             // Clear specified target
             disassemblyCore.setTarget("");
 
             // Load strings data
-            ui->stringsAddressBrowser->setPlainText(disassemblyCore.getStringsAddresses());
-            ui->stringsBrowser->setPlainText(disassemblyCore.getStrings());
+            if (showRightBar) {
+                ui->stringsAddressBrowser->setPlainText(disassemblyCore.getStringsAddresses());
+                ui->stringsBrowser->setPlainText(disassemblyCore.getStrings());
+            }
 
             progress.setValue(4);
         }
@@ -236,7 +255,8 @@ void MainWindow::loadBinary(QString file){
 void MainWindow::on_actionOpen_triggered()
 {
     // Prompt user for file
-    QString file = QFileDialog::getOpenFileName(this, tr("Open File"), files.getCurrentDirectory(), tr("All (*)"));
+//    QString file = QFileDialog::getOpenFileName(this, tr("Open File"), files.getCurrentDirectory(), tr("All (*)"));
+    QString file = "/home/waqar/Projects/QtProjs/QOwnNotes/src/build-QOwnNotes-Desktop-Profile/QOwnNotes";
 
     // Update current directory and load file
     if (file != ""){
@@ -1212,3 +1232,16 @@ void MainWindow::on_actionFullscreen_triggered()
         }
 }
 
+
+void MainWindow::on_removepltCheckBox_stateChanged(int arg1)
+{
+    if (arg1 == Qt::CheckState::Checked)
+        QSettings().setValue("removePlt", true);
+    else
+        QSettings().setValue("removePlt", false);
+}
+
+void MainWindow::on_funcFilterLineEdit_textChanged(const QString &arg1)
+{
+
+}

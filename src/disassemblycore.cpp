@@ -26,7 +26,8 @@ void DisassemblyCore::disassemble(QString file){
     QFuture< QVector<Function> > futureFunctionData = QtConcurrent::run(&objDumper, &ObjDumper::getFunctionData, file, baseOffsets);
     sectionData.clear();
     QFuture< QVector<Section> > futureSectionData = QtConcurrent::run(&objDumper, &ObjDumper::getSectionData, file);
-    QFuture<QVector< QVector<QString> > > futureStrings = QtConcurrent::run(&stringsDumper, &StringsDumper::dumpStrings, file, baseOffsets);
+    QFuture< std::tuple<QVector<QByteArray>, QVector<QByteArray> > > futureStrings =
+            QtConcurrent::run(&stringsDumper, &StringsDumper::dumpStrings, file, baseOffsets);
 
     functionData = futureFunctionData.result();
     sectionData = futureSectionData.result();
@@ -51,7 +52,7 @@ void DisassemblyCore::xrefStrings(){
         for (int lineNum = 0; lineNum < functionLen; lineNum++){
             const QByteArray optStr = itr->getOptStr(lineNum);
 
-            QString address = extractAddress(optStr);
+            QByteArray address = extractAddress(optStr);
 
             if (!address.isEmpty()){
                 int strIndex = strings.getIndexByAddress(std::move(address));
@@ -73,14 +74,14 @@ static inline bool ishex(char c) {
     return isdigit(c) || (c >= 97 && c <= 102);
 }
 
-QString DisassemblyCore::extractAddress(const QByteArray& s){
+QByteArray DisassemblyCore::extractAddress(const QByteArray& s){
     for (int i = 0; i < s.length(); ++i) {
         //keep moving forward till we find a digit
         while (i < s.length() && !ishex(s.at(i)))
             i++;
 
         if (i >= s.length())
-            return QLatin1String("");
+            return QByteArrayLiteral("");
 
         int start = i;
         if (s.at(i) == '0')
@@ -90,7 +91,7 @@ QString DisassemblyCore::extractAddress(const QByteArray& s){
 
         const char c = s.at(i);
         if (!ishex(c))
-            return QLatin1String("");
+            return QByteArrayLiteral("");
 
         int count = 0;
         while (ishex(s.at(i))) {
@@ -101,11 +102,11 @@ QString DisassemblyCore::extractAddress(const QByteArray& s){
         }
 
         if (count >= 4) {
-            QString ret = s.mid(start, i - start);
+            QByteArray ret = s.mid(start, i - start);
             return ret;
         }
     }
-    return QLatin1String("");
+    return QByteArrayLiteral("");
 }
 
 QString DisassemblyCore::getObjdumpErrorMsg(QString file){
@@ -222,8 +223,8 @@ bool DisassemblyCore::functionExists(QString name){
     int numFunctions = functionData.length();
 
     for (int i = 0; i < numFunctions; i++){
-        Function currentFunction = functionData.at(i);
-        QString currentName = currentFunction.getName();
+        const Function& currentFunction = functionData.at(i);
+        const QString& currentName = currentFunction.getName();
         if (currentName == name)
             return true;
     }
@@ -384,7 +385,7 @@ QString DisassemblyCore::getStrings(){
 }
 
 int DisassemblyCore::getStringIndexByAddress(QString address){
-    return strings.getIndexByAddress(address);
+    return strings.getIndexByAddress(address.toLocal8Bit());
 }
 
 QString DisassemblyCore::getStringAddressAt(int index){

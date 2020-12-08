@@ -130,6 +130,10 @@ private slots:
 
     void on_stringsSearchBar_returnPressed();
 
+    void on_removepltCheckBox_stateChanged(int arg1);
+
+    void on_funcFilterLineEdit_textChanged(const QString &arg1);
+
 private:
     Ui::MainWindow *ui;
     DisassemblyCore disassemblyCore;

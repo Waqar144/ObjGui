@@ -7,15 +7,16 @@ class Strings
 {
 public:
     Strings();
-    Strings(QVector< QVector<QString> > stringsData);
-    void setStringsData(QVector< QVector<QString> > stringsData);
-    int getIndexByAddress(QString address);
+    void setStringsData(std::tuple<QVector<QByteArray>, QVector<QByteArray> >&& data);
+    int getIndexByAddress(QByteArray address);
     QString getAddressAt(int index);
     QString getStringAt(int index);
     QString getStringsAddresses();
     QString getStrings();
 private:
-    QVector< QVector<QString> > stringsMatrix;
+    QVector<qint64> addrsLong;
+    QVector<QByteArray> strings;
+    QVector<QByteArray> addresses;
     int matrixLen;
 };
 

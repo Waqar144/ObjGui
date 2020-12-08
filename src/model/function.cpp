@@ -40,11 +40,12 @@ std::array<QByteArray, 5> Function::getLine(int line){
     }
 }
 
-QByteArray Function::getOptStr(int line) {
+const QByteArray& Function::getOptStr(int line) {
     if (line >= 0 && line < matrixLen)
         return functionMatrix.at(line).at(3);
     else {
-        return {};
+        static QByteArray b;
+        return b;
     }
 }
 
@@ -82,7 +83,7 @@ int Function::getMatrixLen(){
     return matrixLen;
 }
 
-QString Function::getName(){
+const QString& Function::getName() const {
     return name;
 }
 
