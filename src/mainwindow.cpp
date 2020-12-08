@@ -158,7 +158,6 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(ui->codeBrowser, SIGNAL(cursorPositionChanged()), this, SLOT(highlightCurrentLine()));
 
     currentFunctionIndex = 0;
-
 }
 
 MainWindow::~MainWindow()
@@ -729,6 +728,8 @@ void MainWindow::on_actionFind_2_triggered()
     if (ui->searchBar->isHidden()){
         ui->searchBar->show();
         ui->findLineEdit->setFocus();
+        QString text = ui->codeBrowser->textCursor().selectedText();
+        ui->findLineEdit->setText(text);
     }else {
         ui->searchBar->hide();
     }
